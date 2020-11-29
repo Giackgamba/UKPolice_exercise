@@ -123,12 +123,14 @@ The producer has a few options:
     Options:
     -t, --current_date TEXT  The current date (YYYY-MM format)
     -u, --from_last_update   Only run for dates after last_update
-    -l, --local              run Dask in single node mode, helpful for debugging
+    -n, --limit              Only run for n forces and areas
+    -l, --local              Run Dask in single node mode, helpful for debugging
     --help                   Show this message and exit.
 
  - `-l`, `--local`: Don't send the tasks to the scheduler, everything will be run sequentially; helpful for debugging.
  - `-u`, `--from_last_update`: Only run for dates after the last update; This date is stored in a file next to the producer (`last_update.json`); to reset the last update, delete the file.
  - `-t`, `--current_date`: Run for dates until this date. The current month by default; in the format `YYYY-MM`
+ - `-n`, `--limit`: As the whole pipeline is lengthy to run, limit the sync only to the first `n` areas of the first `n` forces
 
 ### TODOs:
 

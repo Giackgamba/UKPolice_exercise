@@ -35,7 +35,7 @@ def validate_date(cts, param, value):
 @click.option('--local', '-l',
               is_flag=True,
               default=False,
-              help='run Dask in single node mode, helpful for debugging')
+              help='Run Dask in single node mode, helpful for debugging')
 def run(current_date, from_last_update, limit, local):
     init_db()
 
