@@ -97,7 +97,7 @@ The dask scheduler has an [interactive interface](http://localhost:8787) to show
 The `docker-compose` file describes an architecture with a MySQL DB, a scheduler, 4 workers and a producer.
 The producer launches the script that initializes the db, if necessary, and send the tasks to the scheduler, that will forward them to the workers.
 
-There is also an `adminer` container to conveniently explore the db [via browser](http://localhost:9090).
+There is also an `adminer` container to conveniently explore the db [via browser](http://localhost:9090) (username: `giack`, password: `password`).
 
 
 ## How to run
