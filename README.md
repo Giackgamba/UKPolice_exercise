@@ -134,6 +134,7 @@ The producer has a few options:
 
 ### TODOs:
 
- - Better logging
- - `api_interface.py` refactor, some things should be DRYied more
  - Connection strings and global parameters, should be passed by env variables
+ - `api_interface.py` refactor, some things should be DRYied more
+ - Investigate slow write to DB
+ - Better logging
