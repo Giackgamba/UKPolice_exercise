@@ -1,8 +1,9 @@
 import logging
+from time import sleep
 
 from sqlalchemy import (Column, Float, ForeignKey, Integer, String,
                         create_engine)
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -158,13 +159,17 @@ class Outcome(Base, OrmUpsert):
     person_id = Column(String(32))
 
     def __init__(self, api_data):
-        self.crime = Crime(api_data['crime'], api_data['city'])
+        self.crime = api_data['crime']
         self.category = OutcomeCategory(api_data['category'])
         self.date = api_data['date']
         self.person_id = api_data['person_id']
 
 
 def init_db():
-    engine = create_engine("mysql://giack:password@my_db/faire", echo=False)
-
-    Base.metadata.create_all(engine)
+    try:
+        engine = create_engine("mysql://giack:password@my_db/faire")
+        Base.metadata.create_all(engine)
+    except OperationalError:
+        print('waiting to connect to db')
+        sleep(2)
+        init_db()

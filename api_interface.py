@@ -1,12 +1,13 @@
+import json
+import logging
+from time import sleep
+
 import dask
 import requests
-import logging
-import json
-from time import sleep
 from shapely import ops
 from shapely.geometry import LineString, Polygon, mapping
 
-from models import CrimeCategory, Outcome
+from models import Crime, CrimeCategory, Outcome
 
 logging.basicConfig
 log = logging.getLogger(__name__)
@@ -50,7 +51,13 @@ class ApiInterface():
             return self.get_areas(force)
         return [area['id'] for area in areas.json()]
 
-    def get_boundary(self, force, area) -> list:
+    def get_all_dates(self) -> list:
+        dates = requests.get(self.base_url + '/crimes-street-dates')
+        if dates.status_code != 200:
+            raise Exception(dates.content)
+        return sorted([d['date'] for d in dates.json()])
+
+    def get_boundary(self, force: str, area: str) -> list:
         """
         Return the boundary of an area
         """
@@ -66,13 +73,30 @@ class ApiInterface():
                     ]
         return (Polygon(boundary), force)
 
-    def get_all_dates(self) -> list:
-        dates = requests.get(self.base_url + '/crimes-street-dates')
-        if dates.status_code != 200:
-            raise Exception
-        return sorted([d['date'] for d in dates.json()])
+    @staticmethod
+    def merge_polygons(poly_list: list, force: str) -> Polygon:
+        force_poly = ops.cascaded_union(poly_list)
+        return (force_poly, force)
 
-    def download_and_load_crimes(self, date: str, poly: Polygon, force: str) -> list:
+    def get_crimes(self, date: str, poly: Polygon, force: str):
+        poly_string = self.poly_to_string(poly)
+        crimes = requests.post(self.base_url + '/crimes-street/all-crime',
+                               data={'date': date,
+                                     'poly': poly_string})
+        if crimes.status_code == 503:
+            polies = self.subdivide_poly(poly)
+            for p in polies:
+                return self.get_crimes(date, p, force)
+        if crimes.status_code != 200:
+            print('Hitting crime quota limit, sleeping a sec')
+            print(crimes.content)
+            print(crimes.status_code)
+            sleep(0.1)
+            return self.get_crimes(date, poly, force)
+        print('got crimes')
+        return crimes.json()
+
+    def get_outcomes(self, date: str, poly: Polygon,):
         poly_string = self.poly_to_string(poly)
         outcomes = requests.post(self.base_url + '/outcomes-at-location',
                                  data={'date': date,
@@ -80,21 +104,30 @@ class ApiInterface():
         if outcomes.status_code == 503:
             polies = self.subdivide_poly(poly)
             for p in polies:
-                return self.download_and_load_crimes(date, p)
+                return self.get_outcomes(date, p)
         if outcomes.status_code != 200:
-            print('Hitting quota limit, sleeping a sec')
-            print(outcomes.url)
-            sleep(1)
-            return self.download_and_load_crimes(date, poly, force)
+            print('Hitting outcome quota limit, sleeping a sec')
+            print(outcomes.content)
+            sleep(0.1)
+            return self.get_outcomes(date, poly)
+        print('got outcomes')
+        return outcomes.json()
 
-        result = list()
-        for outcome in outcomes.json():
-            outcome.update({'city': force})
+    def download_and_load_crimes(self, date: str, poly: Polygon, force: str) -> list:
+        crimes = self.get_crimes(date, poly, force)
+
+        for crime in crimes:
+            crime = Crime(crime, force)
+            crime.get_or_create()
+
+    def download_and_load_outcomes(self, date: str, poly: Polygon) -> list:
+
+        outcomes = self.get_outcomes(date, poly)
+        for outcome in outcomes:
             outcome = Outcome(outcome)
-            result.append(outcome.get_or_create())
-        return result
+            outcome.get_or_create
 
-    def get_data(self, poly, dates):
+    def get_data(self, dates, limit):
         """
         Iterate the given dates to insert data in db
         Save a file with the highest date loaded
@@ -106,38 +139,38 @@ class ApiInterface():
             category.get_or_create()
 
         # Create list of areas
-        areas_list = list()
         forces = self.get_forces()
-        for force in forces[:5]:
+        areas_list = list()
+        for force in forces[:limit]:
             print(force)
             areas = self.get_areas(force)
-            for area in areas[:5]:
+            for area in areas[:limit]:
                 print(area)
-                areas_list.append(dask.delayed(self.get_boundary)(force, area))
-        # Ask the boundary of each area to the API
-        boundaries = dask.compute(*areas_list)
+                # Promise to ask the boundary of each area to the API
+                areas_list.append(
+                    dask.delayed(self.get_boundary)(force, area))
+        # Execute promises
+        force_boundaries = dask.compute(*areas_list)
 
         # Create a list of requests
-        outcomes_list = list()
-        for date in dates[-1:]:
+        crimes_list = list()
+        outcome_list = list()
+        for date in dates:
             log.info('Downloading data for {}'.format(date))
             print('Downloading data for {}'.format(date))
 
-            for poly, force in boundaries:
-                outcomes_list.append(dask.delayed(self.download_and_load_crimes)(date, poly, force))
+            for poly, force in force_boundaries:
+                # Promise to download and save the data
+                crimes_list.append(
+                    dask.delayed(
+                        self.download_and_load_crimes)(date, poly, force))
+                outcome_list.append(
+                    dask.delayed(
+                        self.download_and_load_outcomes)(date, poly))
             with open('last_update.json', 'w') as f:
                 json.dump({'last-update': date}, f)
-        # Execute the requests
-        dask.compute(*outcomes_list)
-
-        # Create a list of DB insert operations
-        # insert_list = list()
-        # for outcome_tuple in outcomes:
-        #     for api_data in outcome_tuple:
-        #         outcome = Outcome(api_data)
-        #         insert_list.append(dask.delayed(outcome.get_or_create)())
-        #     # Execute them
-        # dask.compute(*insert_list)
+        # Execute promises
+        dask.compute(crimes_list + outcome_list)
 
     @staticmethod
     def poly_to_string(poly: Polygon) -> str:
