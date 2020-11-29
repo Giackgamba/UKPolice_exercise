@@ -125,6 +125,7 @@ services:
     command: --default-authentication-plugin=mysql_native_password
     volumes:
         - ./mysqlconf.cnf:/etc/mysql/conf.d/my.cnf
+        - db_data:/var/lib/mysql
     environment:
         MYSQL_ROOT_PASSWORD: password
         MYSQL_USER: giack
@@ -144,3 +145,6 @@ services:
 
 networks:
   faire_net:
+
+volumes:
+  db_data:
