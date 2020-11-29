@@ -1,0 +1,4 @@
+requests            # For interfacing with API
+sqlalchemy[mysql]   # For interfacing with DB
+shapely             # Polygon management
+click               # Script launching

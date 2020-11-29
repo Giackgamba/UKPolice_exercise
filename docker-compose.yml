@@ -1,0 +1,133 @@
+version: "3.1"
+
+services:
+  scheduler:
+    image: faire_police
+    build:
+      context: .
+    hostname: scheduler
+    ports:
+      - "8786:8786"
+      - "8787:8787"
+    command: ["dask-scheduler"]
+    volumes:
+      - .:/app
+    networks:
+      - faire_net
+    depends_on:
+      - my_db
+
+  worker_1:
+    image: faire_police
+    build:
+      context: .
+    hostname: worker
+    command: ["dask-worker", "tcp://scheduler:8786"]
+    volumes:
+      - .:/app
+    networks:
+      - faire_net
+
+  worker_2:
+    image: faire_police
+    build:
+      context: .
+    hostname: worker
+    command: ["dask-worker", "tcp://scheduler:8786"]
+    volumes:
+      - .:/app
+    networks:
+      - faire_net
+
+  worker_3:
+    image: faire_police
+    build:
+      context: .
+    hostname: worker
+    command: ["dask-worker", "tcp://scheduler:8786"]
+    volumes:
+      - .:/app
+    networks:
+      - faire_net
+
+  worker_4:
+    image: faire_police
+    build:
+      context: .
+    hostname: worker
+    command: ["dask-worker", "tcp://scheduler:8786"]
+    volumes:
+      - .:/app
+    networks:
+      - faire_net
+
+  # worker_5:
+  #   image: faire_police
+  #   build:
+  #     context: .
+  #   hostname: worker
+  #   command: ["dask-worker", "tcp://scheduler:8786"]
+  #   volumes:
+  #     - .:/app
+  #   networks:
+  #     - faire_net
+
+  # worker_6:
+  #   image: faire_police
+  #   build:
+  #     context: .
+  #   hostname: worker
+  #   command: ["dask-worker", "tcp://scheduler:8786"]
+  #   volumes:
+  #     - .:/app
+  #   networks:
+  #     - faire_net
+
+  # worker_7:
+  #   image: faire_police
+  #   build:
+  #     context: .
+  #   hostname: worker
+  #   command: ["dask-worker", "tcp://scheduler:8786"]
+  #   volumes:
+  #     - .:/app
+  #   networks:
+  #     - faire_net
+
+  # worker_8:
+  #   image: faire_police
+  #   build:
+  #     context: .
+  #   hostname: worker
+  #   command: ["dask-worker", "tcp://scheduler:8786"]
+  #   volumes:
+  #     - .:/app
+  #   networks:
+  #     - faire_net
+
+  my_db:
+    image: mysql
+    networks:
+        - faire_net
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+        - ./mysqlconf.cnf:/etc/mysql/conf.d/my.cnf
+    environment:
+        MYSQL_ROOT_PASSWORD: password
+        MYSQL_USER: giack
+        MYSQL_PASSWORD: password
+        MYSQL_DATABASE: faire
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+        - 9090:8080
+    networks:
+        - faire_net
+    depends_on:
+       - my_db
+
+
+networks:
+  faire_net:
