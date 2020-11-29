@@ -125,7 +125,7 @@ class ApiInterface():
         outcomes = self.get_outcomes(date, poly)
         for outcome in outcomes:
             outcome = Outcome(outcome)
-            outcome.get_or_create
+            outcome.get_or_create()
 
     def get_data(self, dates, limit):
         """
