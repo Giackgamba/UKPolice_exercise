@@ -17,6 +17,20 @@ services:
     depends_on:
       - my_db
 
+  producer:
+    image: faire_police
+    build:
+      context: .
+    volumes:
+      - .:/app
+    networks:
+      - faire_net
+    depends_on:
+      - my_db
+      - scheduler
+    entrypoint: "python producer.py"
+
+
   worker_1:
     image: faire_police
     build:
