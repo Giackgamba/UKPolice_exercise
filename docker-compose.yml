@@ -30,7 +30,6 @@ services:
       - scheduler
     entrypoint: "python producer.py"
 
-
   worker_1:
     image: faire_police
     build:

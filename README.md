@@ -3,22 +3,22 @@
 This repo contains the source code used to download all the UK Police database.
 The data comes from [https://data.police.uk/](https://data.police.uk/]).
 
-### Endpoints
-The main entrypoint to download data is `/crimes-street` which takes as input a polygon (among other methods of geo query) and a month, and return all the crimes in the polygon registered that month.
-
+## Endpoints
 We can map directly the `categories` table to the `/crime-categories`
 and find all the avaiable dates using the `/crimes-street-dates` endpoint.
 
-Using the polygon is the only way to ensure to not to get duplicate data points, but to obtain the boundaries we need to know all available neighborhoods.
+The main entrypoint to download data is `/crimes-street` which takes as input a coordinates polygon (among other option for spatial querying) and a month, and return all the crimes in the polygon registered in that month.
+
+Using the polygon is the only way to ensure not to get duplicate data points, but to obtain the boundaries we need to know all available neighborhoods.
 We then need to query the `/forces` and then `/<force>/neighborhoods` endpoints.
 
-Once we have a valid boundary we can query `/crimes-street` and `outcomes-at-location` to get all the crimes and the outcomes in the area.
+Once we have a valid boundary we can query `/crimes-street` and `/outcomes-at-location` to get all the crimes and the outcomes in the area.
 
 If an area has more than 10.000 crimes in that month an error is reported, so we need to divide the polygon and ask the data again. This is unlikely to happen, but a limit nonetheless.
 
 The API has a 15 requests/sec limit, so it's important to limit the requests' number.
 
-### Data
+## Data
 
 
 A crime object is returned by the API as:
@@ -44,7 +44,7 @@ A crime object is returned by the API as:
 
 We can insert the requested fields in the `crime` table, but we need to ensure that the `street` `id` is already present in the `streets` table.
 
-
+---
 An outcome object is returned as:
 
     {
@@ -75,7 +75,7 @@ An outcome object is returned as:
 
 Here we have to check that the `category` field is present in the `categories` table before saving the record.
 
-### Architecture
+## Architecture
 
 The scripts uses  the `dask` library to parallelize the computation.
 In a dask system we have a central scheduler and a number of workers, each with the whole environment loaded.
