@@ -87,10 +87,8 @@ class ApiInterface():
             polies = self.subdivide_poly(poly)
             for p in polies:
                 return self.get_crimes(date, p, force)
-        if crimes.status_code != 200:
+        if crimes.status_code == 429:
             print('Hitting crime quota limit, sleeping a sec')
-            print(crimes.content)
-            print(crimes.status_code)
             sleep(0.1)
             return self.get_crimes(date, poly, force)
         print('got crimes')
@@ -105,9 +103,8 @@ class ApiInterface():
             polies = self.subdivide_poly(poly)
             for p in polies:
                 return self.get_outcomes(date, p)
-        if outcomes.status_code != 200:
+        if outcomes.status_code == 429:
             print('Hitting outcome quota limit, sleeping a sec')
-            print(outcomes.content)
             sleep(0.1)
             return self.get_outcomes(date, poly)
         print('got outcomes')
@@ -156,8 +153,8 @@ class ApiInterface():
         crimes_list = list()
         outcome_list = list()
         for date in dates:
-            log.info('Downloading data for {}'.format(date))
-            print('Downloading data for {}'.format(date))
+            log.info('Preparing data download for {}'.format(date))
+            print('Preparing data download for {}'.format(date))
 
             for poly, force in force_boundaries:
                 # Promise to download and save the data
@@ -168,7 +165,7 @@ class ApiInterface():
                     dask.delayed(
                         self.download_and_load_outcomes)(date, poly))
             with open('last_update.json', 'w') as f:
-                json.dump({'last-update': date}, f)
+                json.dump({'last_update': date}, f)
         # Execute promises
         dask.compute(crimes_list + outcome_list)
 
