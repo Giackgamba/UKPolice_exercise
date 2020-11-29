@@ -1,22 +1,17 @@
-import click
-import re
 import json
 import logging
+import re
 from datetime import date
+
+import click
 from dask.distributed import Client
 
 from api_interface import ApiInterface
 from models import init_db
 
-client = Client('scheduler:8786')
 
-
-def validate_polygon(ctx, param, value):
-    try:
-        poly = ApiInterface.poly_from_string(value)
-        return poly
-    except ValueError:
-        raise click.BadParameter(message='area is not in the right format')
+log = logging.getLogger(__name__)
+logging.basicConfig()
 
 
 def validate_date(cts, param, value):
@@ -27,15 +22,21 @@ def validate_date(cts, param, value):
 
 
 @click.command()
-@click.option('--area', default='49,-8.5:49,2:60,2:60,-8.5',
-              help="The area to scan, in the format: lat,long:lat,long...",
-              callback=validate_polygon)
 @click.option('--current_date', '-t',
-              help='The current date',
+              help='The current date (YYYY-MM format)',
               default=lambda: date.today().strftime('%Y-%m'),
               callback=validate_date)
-@click.option('--from_last_update', '-u', is_flag=True)
-def run(area, current_date, from_last_update):
+@click.option('--from_last_update', '-u',
+              is_flag=True,
+              help='Only run for dates after last_update')
+@click.option('--limit', '-n',
+              type=int,
+              help='Only run for n forces and areas')
+@click.option('--local', '-l',
+              is_flag=True,
+              default=False,
+              help='run Dask in single node mode, helpful for debugging')
+def run(current_date, from_last_update, local):
     init_db()
 
     police_api = ApiInterface('https://data.police.uk/api/')
@@ -43,12 +44,16 @@ def run(area, current_date, from_last_update):
 
     dates = [d for d in dates if d < current_date]
 
+    if not local:
+        # if a Client call is detected dask will automagically use it
+        Client('scheduler:8786')
+
     if from_last_update:
         with open('last_update.json', 'r') as f:
             last_update = json.load(f)['last_update']
         dates = [d for d in dates if d > last_update]
 
-    police_api.get_data(area, dates)
+    police_api.get_data(dates, limit)
 
 
 if __name__ == '__main__':
