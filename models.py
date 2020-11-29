@@ -41,12 +41,8 @@ class OrmUpsert():
                 current_session.commit()
             except IntegrityError:
                 log.debug('Dupicate keys')
-                # current_session.expunge(self)
                 current_session.rollback()
             current_session.flush()
-        # if not session:
-        #     log.debug('Im closing the connection')
-        #     current_session.close()
         return instance
 
     def ensure_foreign_keys(self, session):
@@ -159,7 +155,7 @@ class Outcome(Base, OrmUpsert):
     person_id = Column(String(32))
 
     def __init__(self, api_data):
-        self.crime = api_data['crime']
+        self.crime = api_data['crime']['id']
         self.category = OutcomeCategory(api_data['category'])
         self.date = api_data['date']
         self.person_id = api_data['person_id']
