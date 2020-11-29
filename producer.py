@@ -36,7 +36,7 @@ def validate_date(cts, param, value):
               is_flag=True,
               default=False,
               help='run Dask in single node mode, helpful for debugging')
-def run(current_date, from_last_update, local):
+def run(current_date, from_last_update, limit, local):
     init_db()
 
     police_api = ApiInterface('https://data.police.uk/api/')

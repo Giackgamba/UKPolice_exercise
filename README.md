@@ -3,6 +3,16 @@
 This repo contains the source code used to download all the UK Police database.
 The data comes from [https://data.police.uk/](https://data.police.uk/]).
 
+## TLDR:
+To run the pipeline execute:
+
+    docker-compose up
+
+
+Go to [http://localhost:8787](http://localhost:8787) for a progress dashboard.
+
+Go to [http://localhost:9090](http://localhost:9090) for a simple view into the database.
+
 ## Endpoints
 We can map directly the `categories` table to the `/crime-categories`
 and find all the avaiable dates using the `/crimes-street-dates` endpoint.
@@ -82,10 +92,12 @@ In a dask system we have a central scheduler and a number of workers, each with 
 
 Every not trivial request and db operation is distributed by the scheduler to the workers that will execute them and report back the result.
 
+The dask scheduler has an [interactive interface](http://localhost:8787) to show progress
+
 The `docker-compose` file describes an architecture with a MySQL DB, a scheduler, 4 workers and a producer.
 The producer launches the script that initializes the db, if necessary, and send the tasks to the scheduler, that will forward them to the workers.
 
-There is also an `adminer` container to conveniently explore the db [via browser](http://localhost:9090]).
+There is also an `adminer` container to conveniently explore the db [via browser](http://localhost:9090).
 
 
 ## How to run
@@ -97,7 +109,7 @@ We can build the architecture with:
 When the stack is ready, the producer will start the script.
 If we want to control the producer we need to run:
 
-    docker-compose up my_db adminer scheduler worker_1 worker_2 worker_3 woker_4
+    docker-compose up -d my_db adminer scheduler worker_1 worker_2 worker_3 worker_4
 
 and then we can specifically start the producer
 
